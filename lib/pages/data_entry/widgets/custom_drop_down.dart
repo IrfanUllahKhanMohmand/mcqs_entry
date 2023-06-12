@@ -90,10 +90,14 @@ class _CategoryDropDownState extends State<CategoryDropDown> {
                     ),
                     InkWell(
                       onTap: (){
-                        dataEntry.addCategory(_searchController.text,dataEntry.categories);
-                        _searchController.clear();
-                        _collapse();
-                        dataEntry.updateData();
+                        if(_searchController.text.isNotEmpty){
+                          dataEntry.addCategory(_searchController.text,dataEntry.categories);
+                          _searchController.clear();
+                          _collapse();
+                          dataEntry.updateData();
+                        }else{
+                          ScaffoldMessenger.of(context)..removeCurrentSnackBar()..showSnackBar(const SnackBar(content: Text("Can Not Be Empty")));
+                        }
                       },
                       child: Container(
                           padding: EdgeInsets.all(10.h),
@@ -202,10 +206,15 @@ class _SubjectsDropDownState extends State<SubjectsDropDown> {
                     ),
                     InkWell(
                       onTap: (){
-                        dataEntry.addSubject(_searchController.text,dataEntry.subjectsList);
-                        _searchController.clear();
-                        _collapse();
-                        dataEntry.updateSubjectsData();
+                        if(_searchController.text.isNotEmpty){
+                          dataEntry.addSubject(_searchController.text,dataEntry.subjectsList);
+                          _searchController.clear();
+                          _collapse();
+                          dataEntry.updateSubjectsData();
+                        }else{
+                          ScaffoldMessenger.of(context)..removeCurrentSnackBar()..showSnackBar(const SnackBar(content: Text("Can Not Be Empty")));
+                        }
+
                       },
                       child: Container(
                           padding: EdgeInsets.all(10.h),
@@ -311,10 +320,15 @@ class _TopicsDropDownState extends State<TopicsDropDown> {
                     ),
                     InkWell(
                       onTap: (){
-                        dataEntry.addTopic(_searchController.text,dataEntry.topicList);
-                        _searchController.clear();
-                        _collapse();
-                        dataEntry.updateTopicData();
+                        if(_searchController.text.isNotEmpty){
+                          dataEntry.addTopic(_searchController.text,dataEntry.topicList);
+                          _searchController.clear();
+                          _collapse();
+                          dataEntry.updateTopicData();
+                        }else{
+                          ScaffoldMessenger.of(context)..removeCurrentSnackBar()..showSnackBar(const SnackBar(content: Text("Can Not Be Empty")));
+                        }
+
                       },
                       child: Container(
                           padding: EdgeInsets.all(10.h),

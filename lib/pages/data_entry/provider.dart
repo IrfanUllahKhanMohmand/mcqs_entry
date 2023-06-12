@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:mcqs_entry/common/utills/app_constants.dart';
+import 'package:http/http.dart' as http;
 
 class DataEntryProvider extends ChangeNotifier{
   String _type = "MCQS";
@@ -23,10 +25,18 @@ class DataEntryProvider extends ChangeNotifier{
   bool get option2 => _option2;
   bool get option3 => _option3;
   bool get option4 => _option4;
+  int correctOption = 1;
+  bool isUploading = false;
 
+  setIsUploading(bool value){
+    print('called');
+    isUploading = value;
+    notifyListeners();
+  }
 
 
   void setOption(bool value, int optionNumber){
+    correctOption = optionNumber;
     if(optionNumber == 1){
       _option1 = value;
       _option2 = false;
@@ -90,7 +100,11 @@ class DataEntryProvider extends ChangeNotifier{
       int topicIndex = _availableTestTopicsList.indexWhere((element) => element.currentTopic == _selectedCategory);
       _currentTopic = topicIndex;
       _topicList = _availableTestTopicsList[topicIndex].list!;
-      _selectedTopic = _topicList[0];
+      if(_topicList.isNotEmpty){
+        _selectedTopic = _topicList[0];
+      }else{
+        _selectedTopic = "";
+      }
     }
     notifyListeners();
   }
@@ -205,19 +219,23 @@ class DataEntryProvider extends ChangeNotifier{
 
   // Hive.box(appBox).get(availableSubjectListKey) != null ? (jsonDecode() as List<dynamic>).map((e) => Available.fromJson(e)).toList() :
   final List<AvailableTopics> _availableSubjectsList =  Hive.box(appBox).get(availableSubjectListKey)!= null ? (Hive.box(appBox).get(availableSubjectListKey) as List<dynamic>).map((e) => AvailableTopics(key: e.key, list: e.list,currentTopic: e.currentTopic)).toList(): [
-    AvailableTopics(key: commonSubjectsCategoriesListKey,list: commonSubjectsCategories,currentTopic: "Common Subjects"),
-    AvailableTopics(key: managementSubjectsCategoriesListKey,list: managementSubjectsCategories,currentTopic: "Management Subjects"),
-    AvailableTopics(key: medicalSubjectsCategoriesListKey,list: medicalSubjectsCategories,currentTopic: "Medical Subjects"),
-    AvailableTopics(key: engineeringSubjectsCategoriesListKey,list: engineeringSubjectsCategories,currentTopic: "Engineering"),
+    AvailableTopics(key: commonSubjectsListKey,list: commonSubjectsList,currentTopic: "Common Subjects"),
+    AvailableTopics(key: generalKnowledgeSubjectsListKey,list: generalKnowledgeSubjectList,currentTopic: "General Knowledge"),
+    AvailableTopics(key: managementSubjectsListKey,list: managementSubjectList,currentTopic: "Management Subjects"),
+    AvailableTopics(key: medicalSubjectsListKey,list: medicalSubjectList,currentTopic: "Medical Subjects"),
+    AvailableTopics(key: engineeringSubjectsListKey,list: engineeringSubjectList,currentTopic: "Engineering"),
+    AvailableTopics(key: generalScienceSubjectListKey,list: generalScienceSubjectList,currentTopic: "General Science"),
+    AvailableTopics(key: educationSubjectListKey,list: educationSubjectList,currentTopic: "Education"),
+    AvailableTopics(key: aptitudeSubjectListKey,list: aptitudeSubjectList,currentTopic: "Aptitude"),
+    AvailableTopics(key: otherSubjectListKey,list: otherSubjectList,currentTopic: "Other Subjects"),
   ];
-
 
   void setSubject(String subjectSelected,int index){
     _selectedSubject = subjectSelected;
-    int subjectIndex = _availableTopicsList.indexWhere((element) => element.currentTopic == subjectSelected);
-    if(subjectIndex != -1){
-      _topicList = _availableTopicsList[subjectIndex].list!;
-      _currentSubject = subjectIndex;
+    int topicIndex = _availableTopicsList.indexWhere((element) => element.currentTopic == subjectSelected);
+    if(topicIndex != -1){
+      _topicList = _availableTopicsList[topicIndex].list!;
+      _currentTopic = topicIndex;
       if(topicList.isNotEmpty){
         _selectedTopic = _topicList[0];
       }else{
@@ -288,10 +306,73 @@ class DataEntryProvider extends ChangeNotifier{
 
   // Hive.box(appBox).get(availableTopicsListKey) != null ? (jsonDecode(Hive.box(appBox).get(availableTopicsListKey)) as List<dynamic>).map((e) => Available.fromJson(e)).toList() :
   final List<AvailableTopics> _availableTopicsList = Hive.box(appBox).get(availableTopicsListKey) != null ? (Hive.box(appBox).get(availableTopicsListKey) as List<dynamic>).map((e) => AvailableTopics(key: e.key,list: e.list,currentTopic: e.currentTopic)).toList() : [
-    AvailableTopics(key: englishTopicsKey, list: englishTopics,currentTopic: "English"),
-    AvailableTopics(key: generalKnowledgeTopicsKey,list:  generalKnowledgeTopics,currentTopic: "General Knowledge"),
-    AvailableTopics(key: pakistanCurrentAffairsTopicsKey,list:  pakistanCurrentAffairsTopics,currentTopic: "Pak Studies"),
-    AvailableTopics(key: mathematicsTopicsKey,list:  mathematicsTopics,currentTopic: "Chemical Engineering"),
+    /// for common subject
+    AvailableTopics(key: englishTopicsListKey, list: englishTopicsList,currentTopic: "English"),
+    AvailableTopics(key: pakistanCurrentAffairTopicsListKey,list:  pakistanCurrentAffairsTopicsList,currentTopic: "Pakistan Current Affairs"),
+    AvailableTopics(key: internationalCurrentAffairsTopicsListKey,list:  internationalCurrentAffairsTopicsList,currentTopic: "International Current Affairs"),
+    AvailableTopics(key: mathsTopicsListKey,list:  mathematicsTopicsList,currentTopic: "Mathematics"),
+    AvailableTopics(key: pakStudyTopicsListKey,list:  pakStudyTopicsList,currentTopic: "Pak Study"),
+    AvailableTopics(key: islamicStudyTopicListKey,list:  islamicStudyTopicsList,currentTopic: "Islamic Study"),
+    AvailableTopics(key: computerTopicsListKey,list:  computerTopicsList,currentTopic: "Computer"),
+    AvailableTopics(key: everydayScienceTopicsListKey,list:  everydayScienceTopicsList,currentTopic: "Everyday Science"),
+    AvailableTopics(key: urduTopicsListKey,list:  urduTopicsList,currentTopic: "Urdu"),
+    /// for general Knowledge now
+    AvailableTopics(key: basicGeneralKnowledgeTopicsListKey,list:  basicGeneralKnowledgeTopicsList,currentTopic: "Basic General Knowledge"),
+    AvailableTopics(key: currentGkTopicsListKey,list:  currentGkTopicsList,currentTopic: "Current Gk"),
+    AvailableTopics(key: popularInGkTopicsListKey,list:  popularInGkTopicsList,currentTopic: "Popular in Gk"),
+    AvailableTopics(key: subjectWiseGkTopicsListKey,list:  subjectWiseGkTopicsList,currentTopic: "Subject wise Gk"),
+    AvailableTopics(key: worldGkTopicsListKey,list:  worldGkTopicsList,currentTopic: "World Gk"),
+    AvailableTopics(key: pakistanGeneralKnowledgeTopicsListKey,list:  pakistanGeneralKnowledgeTopicsList,currentTopic: "Pakistan General Knowledge"),
+    AvailableTopics(key: allTestGeneralKnowledgeTopicsListKey,list:  allTestGeneralKnowledgeTopicsList,currentTopic: "All test General Knowledge"),
+    /// for medical Subject Now
+    AvailableTopics(key: biologyTopicsListKey,list:  biologyTopicList,currentTopic: "Biology"),
+    AvailableTopics(key: bioChemistryTopicsListKey,list:  biochemistryTopicList,currentTopic: "Bio Chemistry"),
+    AvailableTopics(key: oralAnatomyTopicsListKey,list:  oralAnatomyTopicList,currentTopic: "Oral Anatomy"),
+    AvailableTopics(key: oralPathologyAndMedicineTopicsListKey,list:  oralPathologyAndMedicinesTopicList,currentTopic: "Oral Pathology and Medicine"),
+    AvailableTopics(key: oralHistologyTopicsListKey,list:  oralHistologyTopicList,currentTopic: "Oral Histology"),
+    AvailableTopics(key: pathologyTopicsListKey,list:  pathologyTopicList,currentTopic: "Pathology"),
+    AvailableTopics(key: dentalTopicsListKey,list:  dentalTopicList,currentTopic: "Dental"),
+    AvailableTopics(key: pharmacologyTopicsListKey,list:  pharmacologyTopicList,currentTopic: "Pharmacology"),
+    AvailableTopics(key: physiologyTopicsListKey,list:  physiologyTopicList,currentTopic: "Physiology"),
+    AvailableTopics(key: generalAnatomyTopicsListKey,list:  generalAnatomyTopicList,currentTopic: "General Anatomy"),
+    AvailableTopics(key: bioTechnologyTopicsListKey,list:  bioTechnologyTopicList,currentTopic: "Bio Technology"),
+    AvailableTopics(key: bioInformaticsTopicsListKey,list:  bioInformaticsTopicList,currentTopic: "Bio Informatics"),
+    AvailableTopics(key: botanyTopicsListKey,list:  botanyTopicList,currentTopic: "Botany"),
+    AvailableTopics(key: zoologyTopicsListKey,list:  zoologyTopicList,currentTopic: "Zoology"),
+    /// for management Science Now
+    AvailableTopics(key: accountingTopicsListKey,list:  accountingTopicList,currentTopic: "Accounting"),
+    AvailableTopics(key: economicsTopicsListKey,list:  economicsTopicList,currentTopic: "Economics"),
+    AvailableTopics(key: auditingTopicsListKey,list:  auditingTopicList,currentTopic: "Auditing"),
+    AvailableTopics(key: financeTopicsListKey,list:  financeTopicList,currentTopic: "Finance"),
+    AvailableTopics(key: marketingTopicsListKey,list:  marketingTopicList,currentTopic: "Marketing"),
+    /// for Engineering Subject Now
+    AvailableTopics(key: chemicalEngineeringTopicListKey,list:  chemicalEngineeringTopicList,currentTopic: "Chemical Engineering"),
+    AvailableTopics(key: electricalEngineeringTopicListKey,list:  electricalEngineeringTopicList,currentTopic: "Electrical Engineering"),
+    AvailableTopics(key: civilEngineeringTopicListKey,list:  civilEngineeringTopicList,currentTopic: "Civil Engineering"),
+    AvailableTopics(key: mechanicalEngineeringTopicListKey,list:  mechanicalEngineeringTopicList,currentTopic: "Mechanical Engineering"),
+    AvailableTopics(key: softwareEngineeringTopicListKey,list:  softwareEngineeringTopicList,currentTopic: "Software Engineering"),
+    AvailableTopics(key: electronicsTopicListKey,list:  electronicsTopicList,currentTopic: "Electronics"),
+
+
+    /// for General Science Now
+    AvailableTopics(key: physicsTopicsListKey,list:  physicsTopicList,currentTopic: "Physics"),
+    AvailableTopics(key: chemistryTopicsListKey,list:  chemistryTopicList,currentTopic: "Chemistry"),
+
+    /// for Education
+    AvailableTopics(key: pedagogyTopicsListKey,list:  pedagogyTopicList,currentTopic: "Pedagogy"),
+    AvailableTopics(key: psychologyTopicsListKey,list:  pedagogyTopicList,currentTopic: "Psychology"),
+
+    /// for Aptitude
+    AvailableTopics(key: verbalReasoningTopicsListKey,list:  verbalReasoningTopicList,currentTopic: "Verbal Reasoning"),
+    AvailableTopics(key: analyticalReasoningTopicsListKey,list:  verbalReasoningTopicList,currentTopic: "Analytical Reasoning"),
+    AvailableTopics(key: quantitativeReasoningListKey,list:  verbalReasoningTopicList,currentTopic: "Quantitative Reasoning"),
+
+    /// for Other Subjects
+    AvailableTopics(key: agricultureTopicsListKey,list:  agricultureTopicList,currentTopic: "Agriculture"),
+    AvailableTopics(key: sociologyTopicsListKey,list:  sociologyTopicList,currentTopic: "Sociology"),
+    AvailableTopics(key: englishLiteratureTopicsListKey,list:  englishLiteratureTopicList,currentTopic: "English Literature"),
+    AvailableTopics(key: judiciaryAndLawTopicsListKey,list:  judiciaryAndLawTopicList,currentTopic: "Judiciary and Law"),
+
   ];
 
 
@@ -370,8 +451,72 @@ class DataEntryProvider extends ChangeNotifier{
     notifyListeners();
   }
 
-  // upload Data
+  //upload data to api
+  uploadDataToCPanel({
+    required String question,
+    required String optionOne,
+    required String optionTwo,
+    required String optionThree,
+    required String optionFour,
+    required VoidCallback onComplete
+  }) async{
+    final dio = Dio();
+    if(_type == "MCQS"){
+      print('ralo');
+      await dio.post(
+        'https://apis.pkmcqsquiz.com/api/mcqsRequest',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+          },
+        ),
+        data: {
+          "category": _selectedCategory,
+          "subject":_selectedSubject,
+          "topic":_selectedTopic,
+          "question":question,
+          "option1":optionOne,
+          "option2":optionTwo,
+          "option3":optionThree,
+          "option4":optionFour,
+          "correct_option":correctOption
+        },
+      ).then((value) {
+        if(value.statusCode == 200){
+          onComplete();
+        }
+      });
+    }else{
+      await dio.post(
+        'https://apis.pkmcqsquiz.com/api/testMcqsRequest',
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Headers": "Origin,Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,locale",
+            "Access-Control-Allow-Methods": "POST, OPTIONS"
+          },
+        ),
+        data: {
+          "category": _selectedCategory,
+          "topic":_selectedTopic,
+          "question":question,
+          "option1":optionOne,
+          "option2":optionTwo,
+          "option3":optionThree,
+          "option4":optionFour,
+          "correct_option":correctOption
+        },
+      ).then((value) {
+        if(value.statusCode == 200){
+          onComplete();
+        }
+      });
+    }
+  }
 
+  // upload Data
   uploadDataToFirebase({
     required String question,
     required String optionOne,

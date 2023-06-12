@@ -41,7 +41,7 @@ class _DataEntryPageState extends State<DataEntryPage> {
       ),
       body: Consumer<DataEntryProvider>(
         builder: (context, dataEntryProvider, child) {
-          return SingleChildScrollView(
+          return !dataEntryProvider.isUploading ? SingleChildScrollView(
             child: Column(
               children: [
                 buildTypeContainer(dataEntryProvider),
@@ -68,6 +68,17 @@ class _DataEntryPageState extends State<DataEntryPage> {
                     if(question.text.isEmpty || option1.text.isEmpty || option2.text.isEmpty || option3.text.isEmpty || option4.text.isEmpty){
                       buildErrorDialog();
                     }else{
+                      dataEntryProvider.setIsUploading(true);
+                      await dataEntryProvider.uploadDataToCPanel(
+                          question: question.text,
+                          optionOne: option1.text,
+                          optionTwo: option2.text,
+                          optionThree: option3.text,
+                          optionFour: option4.text,
+                          onComplete: (){
+                            dataEntryProvider.setIsUploading(false);
+                            Future.delayed(const Duration(seconds: 1),()=>showSnackBar(msg: "Your question is successfully saved. In CPanel",icon: Icons.check_circle));
+                          });
                       await dataEntryProvider.uploadDataToFirebase(
                           question: question.text,
                           optionOne: option1.text,
@@ -75,13 +86,12 @@ class _DataEntryPageState extends State<DataEntryPage> {
                           optionThree: option3.text,
                           optionFour: option4.text,
                           onComplete: (){
-                            showSnackBar(msg: "Your question is successfully saved.",icon: Icons.check_circle);
+                            showSnackBar(msg: "Your question is successfully saved. In Firebase",icon: Icons.check_circle);
                           }
                       );
                       // NetworkChecker(
-                      //
                       //   onComplete: (){
-                      //
+                      //     showSnackBar(msg: "Working",icon: Icons.network_check);
                       //   },
                       //   onError: (){
                       //     showSnackBar(msg: "No Internet",icon: Icons.network_check);
@@ -94,14 +104,14 @@ class _DataEntryPageState extends State<DataEntryPage> {
                 )
               ],
             ),
-          );
+          ) : const Center(child: CircularProgressIndicator(),);
         },
       ),
     );
   }
 
   void showSnackBar({required String msg, required IconData icon}){
-    ScaffoldMessenger.of(context).showSnackBar(
+    ScaffoldMessenger.of(context)..removeCurrentSnackBar()..showSnackBar(
         SnackBar(
             backgroundColor: Colors.white,
             behavior: SnackBarBehavior.floating,

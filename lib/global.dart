@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -7,7 +5,7 @@ import 'package:mcqs_entry/common/hive_adopters/available_adopter.dart';
 
 import 'common/utills/app_constants.dart';
 
-class Global{
+class Global {
   static init() async {
     WidgetsFlutterBinding.ensureInitialized();
     await Hive.initFlutter();
@@ -23,7 +21,6 @@ class Global{
             projectId: "quizappdb-d6c67",
             storageBucket: "quizappdb-d6c67.appspot.com",
             messagingSenderId: "788913363184",
-            appId: "1:788913363184:web:ecd0743ffa1849867a0a35")
-    );
+            appId: "1:788913363184:web:ecd0743ffa1849867a0a35"));
   }
 }
